@@ -4,6 +4,8 @@ import android.content.Context;
 import android.support.annotation.NonNull;
 import android.util.Log;
 
+import com.example.administrator.jdbc.activity.MyApplication;
+
 import java.lang.reflect.Method;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
@@ -37,8 +39,7 @@ public class JdbcUtilForAndroid {
      * @param <T>             反射的类的泛型
      */
     public <T> void ExcuteQuery(final Class<T> clazz, String table_name, final String[] selections, String[] where, final String[] whereAgs, final OnQueryListener onQueryListener) {
-        StringBuilder sb = getQuerySql(table_name, selections, where, whereAgs);
-        final String sql = sb.toString();
+        final String sql = getQuerySql(table_name, selections, where, whereAgs);
         Log.i(TAG, "sql = " + sql);
         new Thread() {
             @Override
@@ -56,7 +57,7 @@ public class JdbcUtilForAndroid {
                         }
                     }
                     resultSet = preparedStatement.executeQuery();
-                    List<T> ts = new ArrayList<>();
+                    final List<T> ts = new ArrayList<>();
                     while (resultSet.next()) {
                         //利用反射设置数据到person对象中
                         T t = clazz.newInstance();
@@ -75,7 +76,12 @@ public class JdbcUtilForAndroid {
                     }
                     Log.i(TAG, "ts的查询结果是：" + ts);
                     if (onQueryListener != null) {
-                        onQueryListener.onQueryed(ts);
+                        MyApplication.getHandler().post(new Runnable() {
+                            @Override
+                            public void run() {
+                                onQueryListener.onQueryed(ts);
+                            }
+                        });
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -96,7 +102,7 @@ public class JdbcUtilForAndroid {
      * @return 字符
      */
     @NonNull
-    private StringBuilder getQuerySql(String table_name, String[] selections, String[] where, String[] whereAgs) {
+    private String getQuerySql(String table_name, String[] selections, String[] where, String[] whereAgs) {
         //拼接sql语句
         StringBuilder sb = new StringBuilder();
         sb.append("select ");
@@ -120,7 +126,7 @@ public class JdbcUtilForAndroid {
                 }
             }
         }
-        return sb;
+        return sb.toString();
     }
 
     /**
@@ -128,11 +134,11 @@ public class JdbcUtilForAndroid {
      *
      * @param table_name 表名
      * @param where      搜索条件
-     * @param whereAgs   搜索条件参数
+     * @param whereAgs   要删除条件参数
      * @return 字符
      */
     @NonNull
-    private StringBuilder getDeleteSql(String table_name, String[] where, String[] whereAgs) {
+    private String getDeleteSql(String table_name, String[] where, String[] whereAgs) {
         //拼接sql语句
         //DELETE FROM test WHERE NAME= 'wang'
         StringBuilder sb = new StringBuilder();
@@ -149,7 +155,7 @@ public class JdbcUtilForAndroid {
                 }
             }
         }
-        return sb;
+        return sb.toString();
     }
 
     /**
@@ -189,10 +195,10 @@ public class JdbcUtilForAndroid {
     /**
      * 得到更新的数据库语句
      *
-     * @param table_name
-     * @param selection
-     * @param selectionArg
-     * @param where
+     * @param table_name   表名
+     * @param selection    筛选的数据
+     * @param selectionArg 筛选数据的条件
+     * @param where        搜索条件
      * @return
      */
     private String getUpdateSql(String table_name, String[] selection, String[] selectionArg, String[] where) {
@@ -228,17 +234,15 @@ public class JdbcUtilForAndroid {
     /**
      * 数据库删除操作
      *
-     * @param table_name
-     * @param selections
-     * @param where
-     * @param whereAgs
-     * @param onDeleteListener
+     * @param table_name       表名
+     * @param where            条件
+     * @param whereAgs         条件参数
+     * @param onDeleteListener 结果回调
      */
 
     public void ExcuteDelete(String table_name, String[] where, final String[] whereAgs, final OnDeleteListener onDeleteListener) {
         //DELETE FROM test WHERE NAME= 'wang'
-        StringBuilder sb = getDeleteSql(table_name, where, whereAgs);
-        final String sql = sb.toString();
+        final String sql = getDeleteSql(table_name, where, whereAgs);
         Log.i(TAG, "sql = " + sql);
         new Thread() {
             @Override
@@ -249,9 +253,14 @@ public class JdbcUtilForAndroid {
                     connection = myJdbcUtils.getConnection();
                     //2.创建连接
                     preparedStatement = connection.prepareStatement(sql);
-                    boolean result = preparedStatement.execute();
+                    final boolean result = preparedStatement.execute();
                     if (onDeleteListener != null) {
-                        onDeleteListener.onDeleted(result);
+                        MyApplication.getHandler().post(new Runnable() {
+                            @Override
+                            public void run() {
+                                onDeleteListener.onDeleted(result);
+                            }
+                        });
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -266,10 +275,10 @@ public class JdbcUtilForAndroid {
     /**
      * 执行数据库插入操作
      *
-     * @param table_name
-     * @param where
-     * @param whereAgs
-     * @param onInsertListener
+     * @param table_name       表名
+     * @param where            条件
+     * @param whereAgs         条件参数
+     * @param onInsertListener 结果回调
      */
     public void ExcuteInsert(String table_name, String[] where, final String[] whereAgs, final OnInsertListener onInsertListener) {
         //INSERT INTO test(NAME,account) VALUES ( '老王','110')
@@ -284,9 +293,14 @@ public class JdbcUtilForAndroid {
                     connection = myJdbcUtils.getConnection();
                     //2.创建连接
                     preparedStatement = connection.prepareStatement(sql);
-                    boolean result = preparedStatement.execute();
+                    final boolean result = preparedStatement.execute();
                     if (onInsertListener != null) {
-                        onInsertListener.onInserted(result);
+                        MyApplication.getHandler().post(new Runnable() {
+                            @Override
+                            public void run() {
+                                onInsertListener.onInserted(result);
+                            }
+                        });
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
@@ -301,10 +315,10 @@ public class JdbcUtilForAndroid {
     /**
      * 执行数据库更新操作
      *
-     * @param table_name
-     * @param where
-     * @param whereAgs
-     * @param onUpdateListener
+     * @param table_name       表名
+     * @param where            条件
+     * @param whereAgs         条件参数
+     * @param onUpdateListener 结果回调
      */
     public void ExcuteUpdate(String table_name, String[] selections, final String[] selectionArgs, final String[] where, final String[] whereAgs, final OnUpdateListener onUpdateListener) {
         //INSERT INTO test(NAME,account) VALUES ( '老王','110')
@@ -327,9 +341,14 @@ public class JdbcUtilForAndroid {
                             preparedStatement.setString(i + 1, whereAgs[i]);
                         }
                     }
-                    int result = preparedStatement.executeUpdate();
+                    final int result = preparedStatement.executeUpdate();
                     if (onUpdateListener != null) {
-                        onUpdateListener.onUpdated(result);
+                        MyApplication.getHandler().post(new Runnable() {
+                            @Override
+                            public void run() {
+                                onUpdateListener.onUpdated(result);
+                            }
+                        });
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
