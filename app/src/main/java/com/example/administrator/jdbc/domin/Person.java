@@ -6,6 +6,7 @@ package com.example.administrator.jdbc.domin;
 public class Person {
     private String name;
     private String id;
+    private String passwrod;
     private String createTime;
     private String account;
     private String infomation;
@@ -59,5 +60,13 @@ public class Person {
 
     public void setInfomation(String infomation) {
         this.infomation = infomation;
+    }
+
+    public String getPasswrod() {
+        return passwrod;
+    }
+
+    public void setPasswrod(String passwrod) {
+        this.passwrod = passwrod;
     }
 }

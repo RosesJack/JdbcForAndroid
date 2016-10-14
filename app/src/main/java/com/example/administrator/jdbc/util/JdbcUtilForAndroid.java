@@ -64,11 +64,19 @@ public class JdbcUtilForAndroid {
                         Method[] methods = clazz.getDeclaredMethods();
                         for (Method method : methods) {
                             String methodName = method.getName();
-                            for (String selection : selections) {
-                                //得到set方法
-                                if (methodName.contains("set") && methodName.contains(selection.substring(1, selection.length()))) {
-                                    Log.i(TAG, "方法名称：" + methodName);
-                                    method.invoke(t, resultSet.getString(selection));
+                            if (selections == null || selections.length <= 0) {
+                                if (methodName.contains("set")) {
+                                    Log.i(TAG, "搜索的结果全部设置");
+                                    String fieldName = changeString(methodName);
+                                    method.invoke(t, resultSet.getString(fieldName));
+                                }
+                            } else {
+                                for (String selection : selections) {
+                                    //得到set方法
+                                    if (methodName.contains("set") && methodName.contains(selection.substring(1, selection.length()))) {
+                                        Log.i(TAG, "方法名称：" + methodName);
+                                        method.invoke(t, resultSet.getString(selection));
+                                    }
                                 }
                             }
                         }
@@ -93,6 +101,19 @@ public class JdbcUtilForAndroid {
     }
 
     /**
+     * 改变字符串
+     * 如：setUsername ---> username
+     *
+     * @param result
+     */
+    public String changeString(String result) {
+        result = result.substring(3, result.length());
+        String strTemp = String.valueOf(result.charAt(0));
+        String firstStr = strTemp.toLowerCase();
+        return firstStr + result.substring(1, result.length());
+    }
+
+    /**
      * 根据传入参数拼接出搜索的字符串
      *
      * @param table_name 表名
@@ -106,11 +127,16 @@ public class JdbcUtilForAndroid {
         //拼接sql语句
         StringBuilder sb = new StringBuilder();
         sb.append("select ");
-        int len = selections.length;
-        for (int i = 0; i < len; i++) {
-            sb.append(selections[i]);
-            if (i < len - 1) {
-                sb.append(",");
+        int len;
+        if (selections == null || selections.length <= 0) {
+            sb.append(" * ");
+        } else {
+            len = selections.length;
+            for (int i = 0; i < len; i++) {
+                sb.append(selections[i]);
+                if (i < len - 1) {
+                    sb.append(",");
+                }
             }
         }
         sb.append(" from " + table_name);
